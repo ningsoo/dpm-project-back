@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soundock 이메일 인증</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f7; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+<table border="0" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+        <td align="center" style="padding: 40px 0;">
+            <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <tr>
+                    <td align="center" style="padding: 40px 40px 20px 40px; background-color: #1DB954;">
+                        <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: -1px;">Soundock</h1>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 40px; text-align: center;">
+                        <h2 style="margin: 0 0 20px 0; color: #191414; font-size: 24px; font-weight: 700;">이메일 주소를 인증해주세요</h2>
+                        <p style="margin: 0 0 30px 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
+                            Soundock에 가입해주셔서 감사합니다!<br>
+                            아래 버튼을 클릭하면 이메일 인증이 완료되며,<br>
+                            음악 테이스트를 공유하는 커뮤니티 활동을 시작할 수 있습니다.
+                        </p>
+
+                        <table border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                            <tr>
+                                <td align="center" style="border-radius: 50px;" bgcolor="#1DB954">
+                                    <a th:href="${verificationUrl}" target="_blank" style="display: inline-block; padding: 18px 45px; font-size: 18px; font-weight: 700; color: #ffffff; text-decoration: none; border-radius: 50px;">
+                                        이메일 인증하기
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <p style="margin: 30px 0 0 0; color: #6c757d; font-size: 14px; line-height: 1.5;">
+                            버튼이 클릭되지 않는다면 아래 링크를 복사하여 주소창에 입력해주세요.<br>
+                            <a th:href="${verificationUrl}" th:text="${verificationUrl}" style="color: #1DB954; text-decoration: underline;"></a>
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 30px 40px; background-color: #f8f9fa; text-align: center;">
+                        <p style="margin: 0; color: #adb5bd; font-size: 12px;">
+                            본 메일은 발신 전용입니다. 문의사항은 고객센터를 이용해주세요.<br>
+                            &copy; 2026 Soundock. All rights reserved.
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

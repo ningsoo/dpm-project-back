@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 @Validated
 public class AuthController {
     private final AuthService authService;
+
     @Value("${app.frontend.success-url}")
     private String successUrl;
 
@@ -51,16 +52,22 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> register(
             @Valid @RequestBody UserSignupRequest userSignupRequest
     ) {
+
+        // ----------테스트 단계에서는 현재 주소를 자동으로 추적하는 이 코드를 사용하지만 배포환경에서는 변경이 필요함-------------------
+        String siteURL = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        // ------------------------------------------------------------------------------------------------------------
         // 유효성 검사 통과시 로직 실행
-        authService.signupUser(userSignupRequest);
-        return ResponseEntity.ok(ApiResponse.success());
+        authService.signupUser(userSignupRequest, siteURL);
+        return ResponseEntity.ok(ApiResponse.success("인증 이메일 전송이 완료되었습니다. 이메일을 확인해주세요."));
     }
 
-    // 이메일 전송
+    // 이메일 전송 (재전송시 사용)
     @PostMapping("/verification")
     public ResponseEntity<ApiResponse<Void>> verification(
             @Valid @RequestBody VerificationEmailRequest verificationEmailRequest) {
+        // ----------테스트 단계에서는 현재 주소를 자동으로 추적하는 이 코드를 사용하지만 배포환경에서는 변경이 필요함-------------------
         String siteURL = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        // ------------------------------------------------------------------------------------------------------------
         authService.sendVerificationEmail(verificationEmailRequest, siteURL);
         return ResponseEntity.ok(ApiResponse.success("이메일 인증 전송이 완료되었습니다."));
     }
@@ -89,6 +96,6 @@ public class AuthController {
             @Valid @RequestBody LoginRequest LoginRequest
     ) {
         LoginResponse response = authService.login(LoginRequest);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success("로그인에 성공 했습니다.", response));
     }
 }

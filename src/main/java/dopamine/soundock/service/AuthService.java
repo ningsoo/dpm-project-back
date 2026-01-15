@@ -51,22 +51,27 @@ public class AuthService {
         }
     }
 
-    // 이메일 중복 확인
+    // 닉네임 중복 확인
     @Transactional(readOnly = true)
     public void validateNickname(ValidateNicknameRequest validateNicknameRequest) {
         // 중복 일 경우 예외 발생
-        if (userRepository.existsByEmail(validateNicknameRequest.getNickname())) {
+        if (userRepository.existsByNickname(validateNicknameRequest.getNickname())) {
             throw new DuplicateNicknameException();
         }
     }
 
     // 회원가입
     @Transactional
-    public void signupUser(UserSignupRequest userSignupRequest) {
+    public void signupUser(UserSignupRequest userSignupRequest, String siteURL) {
         String encodedPassword = passwordEncoder.encode(userSignupRequest.getPassword());
         // 이메일 중복 체크
         if (userRepository.existsByEmail(userSignupRequest.getEmail())) {
             throw new DuplicateEmailException();
+        }
+
+        // 닉네임 중복 체크
+        if (userRepository.existsByNickname(userSignupRequest.getNickname())) {
+            throw new DuplicateNicknameException();
         }
 
         // 숫자 이외의 모든 문자 제거
@@ -89,6 +94,9 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+
+        VerificationEmailRequest emailRequest = new VerificationEmailRequest(user.getEmail());
+        sendVerificationEmail(emailRequest, siteURL);
     }
     // 이메일 인증 토큰 생성
     @Transactional
@@ -117,7 +125,7 @@ public class AuthService {
 
             String recipientAddress = verificationEmailRequest.getEmail();
             String subject = "이메일 인증 요청";
-            String verificationUrl = siteURL + "/api/verify?token=" + token;
+            String verificationUrl = siteURL + "/api/auth/verify?token=" + token;
 
             Context context = new Context();
             context.setVariable("verificationUrl", verificationUrl);
@@ -185,7 +193,7 @@ public class AuthService {
                 .builder()
                 .token(refreshToken)
                 .user(user)
-                .expirationAt(LocalDateTime.now().plusMinutes(REFRESH_TOKEN_VALIDITY/1000))
+                .expirationAt(LocalDateTime.now().plusSeconds(REFRESH_TOKEN_VALIDITY/1000))
                 .build();
 
         refreshTokenRepository.save(refresh);
