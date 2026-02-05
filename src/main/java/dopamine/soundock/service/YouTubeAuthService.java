@@ -30,7 +30,7 @@ public class YouTubeAuthService {
     private final OauthRepository oauthRepository;
     private final UserRepository userRepository;
     private final OauthService oauthService;
-    private final RestTemplate restTemplate =  new RestTemplate();
+    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${spring.security.oauth2.client.registration.google.client-id}")

@@ -30,7 +30,7 @@ public class YouTubeService {
 
     private final UserRepository userRepository;
     private final YouTubeAuthService youTubeAuthService;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final PlaylistRepository playlistRepository;
 
     /**

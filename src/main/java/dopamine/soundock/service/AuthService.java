@@ -241,7 +241,7 @@ public class AuthService {
 
         // 3. 상태 검증
         if(!user.getStatus().equals(UserStatus.ACTIVE)) {
-            throw new CustomException("이메일 인증이 완료되지 않았습니다. 메일을 확인해주세요.", HttpStatus.FORBIDDEN);
+            throw new CustomException("사용할 수 없는 아이디 입니다. 관리자에게 문의해주세요.", HttpStatus.FORBIDDEN);
         }
 
         // 로그인 성공 -> 토큰 발급

@@ -4,7 +4,6 @@ import dopamine.soundock.dto.RestResponse;
 import dopamine.soundock.dto.request.BoardCreateRequest;
 import dopamine.soundock.dto.response.BoardResponse;
 import dopamine.soundock.enums.CategoryType;
-import dopamine.soundock.global.IPUtils;
 import dopamine.soundock.service.BoardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -64,7 +63,7 @@ public class BoardController {
             HttpServletRequest request
     ){
         // IP 뽑아오기
-        String clientIp = IPUtils.getClientIp(request);
+        String clientIp = request.getRemoteAddr();
 
         BoardResponse boardResponse = boardService.getDetailBoard(boardId, email, clientIp);
         return ResponseEntity.ok(RestResponse.success(boardResponse));
