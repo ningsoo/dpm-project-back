@@ -39,6 +39,10 @@ public class User {
     private String password;
 
     @NotBlank
+    @Column(name = "name", nullable = false)
+    private String name;
+
+    @NotBlank
     @Column(name = "nickname", nullable = false, unique = true)
     private String nickname;
 

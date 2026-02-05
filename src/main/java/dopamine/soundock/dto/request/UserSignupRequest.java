@@ -30,6 +30,10 @@ public class UserSignupRequest {
     )
     private String password;
 
+    @Schema(description = "실명 이름")
+    @NotBlank(message = "이름은 필수 입력 항목입니다.")
+    private String name;
+
     @Schema(description = "커뮤니티 활동 닉네임 (한글/영문/숫자 10자 이내")
     @NotBlank(message = "닉네임은 필수 입력 항목입니다.")
     @Pattern(

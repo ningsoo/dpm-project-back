@@ -6,6 +6,7 @@ import dopamine.soundock.exceptions.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -38,6 +39,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<RestResponse<String>> handleResourceNotFound(ResourceNotFoundException e){
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(RestResponse.fail(e.getMessage()));
+    }
+
+    // JSON 바디가 없거나 형식이 잘못되었을 때 (HttpMessageNotReadableException)
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<RestResponse<Object>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(RestResponse.fail("요청 본문(Body)이 비어있거나 JSON 형식이 잘못되었습니다."));
     }
 
     @ExceptionHandler(Exception.class)

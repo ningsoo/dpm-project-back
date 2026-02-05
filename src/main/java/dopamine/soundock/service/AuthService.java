@@ -2,14 +2,8 @@ package dopamine.soundock.service;
 
 import dopamine.soundock.dto.TokenDto;
 import dopamine.soundock.dto.request.*;
-import dopamine.soundock.dto.response.EmailCheckResult;
-import dopamine.soundock.dto.response.RefreshResponse;
-import dopamine.soundock.dto.response.ValidateEmailResponse;
-import dopamine.soundock.dto.response.VerificationStatusResponse;
-import dopamine.soundock.entity.AccessTokenBlacklist;
-import dopamine.soundock.entity.RefreshToken;
-import dopamine.soundock.entity.User;
-import dopamine.soundock.entity.VerificationToken;
+import dopamine.soundock.dto.response.*;
+import dopamine.soundock.entity.*;
 import dopamine.soundock.enums.UserRole;
 import dopamine.soundock.enums.UserStatus;
 import dopamine.soundock.exceptions.*;
@@ -32,9 +26,7 @@ import org.thymeleaf.context.Context;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Date;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -142,6 +134,7 @@ public class AuthService {
                 .builder()
                 .email(userSignupRequest.getEmail())
                 .password(encodedPassword)
+                .name(userSignupRequest.getName())
                 .nickname(userSignupRequest.getNickname())
                 .phoneNumber(userSignupRequest.getPhoneNumber())
                 .role(UserRole.USER)
@@ -328,34 +321,24 @@ public class AuthService {
     /**
      * 이메일 찾기 메서드
      */
-    public void emailSearch(String email) {
-        String key = AppConstants.Redis.RATE_LIMIT_PREFIX + email;
+    public List<EmailSearchResponse> emailSearch(String name, String phoneNumber) {
+        // 입력한 이름과 전화번호와 매칭되는 유저 이메일 찾기
+        List<User> users = userRepository.findByNameAndPhoneNumberAndIsDeletedFalse(name, phoneNumber);
 
-        // Redis에서 키 존재 여부 확인 (존재하면 이메일 발송하지 않고 예외 처리)
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(key))) {
-            throw new CustomException("1분 후 다시 시도해주세요.", HttpStatus.TOO_MANY_REQUESTS);
+        // 매칭 되는 유저가 없을 경우
+        if (users.isEmpty()) {
+            throw new ResourceNotFoundException("입력하신 정보와 일치하는 가입 이메일이 없습니다.");
         }
 
-        boolean isRegistered = userRepository.existsByEmail(email);
+        // 매칭되는 유저 이메일 리스트 생성
+        List<EmailSearchResponse> responses = new ArrayList<>();
+        for (User user : users){
+            EmailSearchResponse newResponse = EmailSearchResponse.builder()
+                    .email(user.getEmail())
+                    .build();
 
-        String subject = "[Soundock] 가입 확인 안내";
-        String templateName;
-
-        Context context = new Context();
-        context.setVariable("email", email);
-
-        if (isRegistered) {
-            // 가입 된 경우 (true)
-            templateName = "email/register-guide";
-            context.setVariable("loginUrl", loginUrl);
-        } else {
-            templateName = "email/not-register-guide";
-            context.setVariable("signupUrl", signupUrl);
+            responses.add(newResponse);
         }
-
-        emailService.sendMailAsync(email, subject, templateName, context);
-
-        // 발송시 Redis에 키 저장 (1분뒤 자동삭제)
-        redisTemplate.opsForValue().set(key, "pushed", 1, TimeUnit.MINUTES);
+        return responses;
     }
 }

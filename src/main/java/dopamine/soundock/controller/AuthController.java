@@ -2,10 +2,7 @@ package dopamine.soundock.controller;
 
 import dopamine.soundock.dto.*;
 import dopamine.soundock.dto.request.*;
-import dopamine.soundock.dto.response.LoginResponse;
-import dopamine.soundock.dto.response.RefreshResponse;
-import dopamine.soundock.dto.response.ValidateEmailResponse;
-import dopamine.soundock.dto.response.VerificationStatusResponse;
+import dopamine.soundock.dto.response.*;
 import dopamine.soundock.exceptions.CustomException;
 import dopamine.soundock.global.constants.AppConstants;
 import dopamine.soundock.service.AuthService;
@@ -17,7 +14,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -27,6 +23,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.util.List;
 
 
 @Tag(name = "Auth", description = "유저 관련 API")
@@ -147,7 +145,9 @@ public class AuthController {
         return mav;
     }
 
-    // 유저 로그인
+    /**
+     * 유저 로그인
+     */
     @Operation(
             summary = "사용자 로그인",
             description = "이메일과 비밀번호를 사용하여 인증을 진행하고, 성공 시 JWT 토큰(Access/Refresh)을 발급 "
@@ -179,7 +179,9 @@ public class AuthController {
                 .body(RestResponse.success("로그인에 성공했습니다.", new LoginResponse(tokenDto.getAccessToken())));
     }
 
-    // 유저 로그아웃
+    /**
+     * 유저 로그아웃
+     */
     @Operation(
             summary = "사용자 로그아웃",
             description = "전달된 Access Token을 무효화하고 세션을 종료합니다. 이후 해당 토큰으로는 API 접근이 불가능합니다."
@@ -252,15 +254,16 @@ public class AuthController {
      */
     @Operation(
             summary = "이메일 찾기",
-            description = "사용자가 입력한 이메일 주소로 확인 메일을 발송하여 이메일을 찾는 API"
+            description = "사용자가 입력한 이름 및 전화번호로 가입된 이메일 목록을 조회"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "이메일 메일 발송 성공"),
+            @ApiResponse(responseCode = "200", description = "이메일 조회 성공"),
+            @ApiResponse(responseCode = "404", description = "일치하는 회원 정보 없음")
     })
     @PostMapping("/find-email")
-    public ResponseEntity<RestResponse<Void>> findEmail(@Valid @RequestBody SearchEmailRequest request) {
-        authService.emailSearch(request.getEmail());
+    public ResponseEntity<RestResponse<List<EmailSearchResponse>>> findEmail(@Valid @RequestBody SearchEmailRequest request) {
+        List<EmailSearchResponse> responses = authService.emailSearch(request.getName(), request.getPhoneNumber());
 
-        return ResponseEntity.ok(RestResponse.success("입력하신 이메일로 확인 메일을 발송했습니다."));
+        return ResponseEntity.ok(RestResponse.success("입력하신 정보와 일치하는 이메일 목록 입니다.", responses));
     }
 }
