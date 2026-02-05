@@ -82,11 +82,11 @@ public class BoardController {
     // 게시판 카테고리별 목록 조회
     @GetMapping("/category/{categoryType}")
     public ResponseEntity<RestResponse<?>> getBoards(
-            @RequestParam String keyword,
-            @PathVariable(required = true) CategoryType categoryType
+            @PathVariable(required = true) CategoryType categoryType,
+            @RequestParam(defaultValue = "0") int page
     ){
         // subCategory와 일치하는 게시글 목록 조회
-        List<BoardResponse> boardResponses = boardService.getBoardsByCategory(categoryType);
+        List<BoardResponse> boardResponses = boardService.getBoardsByCategory(categoryType, page) ;
         return ResponseEntity.ok(RestResponse.success(boardResponses));
         }
 
@@ -138,5 +138,4 @@ public class BoardController {
         BoardResponse boardResponse = boardService.likeBoard(boardId);
         return ResponseEntity.ok(RestResponse.success(boardResponse));
     }
-
 }

@@ -9,7 +9,10 @@ import dopamine.soundock.exceptions.ResourceNotFoundException;
 import dopamine.soundock.repository.*;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,19 +92,30 @@ public class BoardService {
     }
 
 
+    // 자자 페이징 처리부터 하자
     // 한 카테고리 내의 모든 게시글 조회
-    public List<BoardResponse> getBoardsByCategory(CategoryType categoryType){
-        List<Board> boards = boardRepository.findByDeletedDateTimeIsNullAndCategoryCategoryType(categoryType);
+    public List<BoardResponse> getBoardsByCategory(CategoryType categoryType, int page) {
+        int pageSize = 0;
+
+        String categoryToString = categoryType.name();
+        if (List.of("SHOWCASE", "PLAYLISTS", "SPOTLIGHT").contains(categoryToString)) {
+            pageSize = 12;
+        } else if (List.of("COMMUNITY", "REVIEWS", "NOTICE").contains(categoryToString)){
+            pageSize = 15;
+        }
+
+        Pageable pageable = PageRequest.of(page, pageSize, Sort.by("createdDateTime").descending());
+
+        List<Board> boards = boardRepository.findByDeletedDateTimeIsNullAndCategoryCategoryType(categoryType, pageable);
         // 보드에서 얻은 게시글 아이디로 코멘트 레포에서 게시글 id만큼 찾아야함
 
-        if (boards.isEmpty()){
+        if (boards.isEmpty()) {
             throw new ResourceNotFoundException("현재 카테고리에 작성된 게시글이 없습니다.");
         }
 
-
         // 게시글 목록 표시
         List<BoardResponse> boardResponses = new ArrayList<>();
-        for (Board board : boards){
+        for (Board board : boards) {
             BoardResponse newResponse = BoardResponse.builder()
                     .boardId(board.getBoardId())
                     .title(board.getTitle())
@@ -203,7 +217,5 @@ public class BoardService {
                 .build();
 
         return boardResponse;
-
     }
-
 }
