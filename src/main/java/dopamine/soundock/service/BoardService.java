@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @RequiredArgsConstructor
@@ -93,9 +94,10 @@ public class BoardService {
 
 
     // 자자 페이징 처리부터 하자
+    // 검색기능까지 라쓰고
     // 한 카테고리 내의 모든 게시글 조회
-    public List<BoardResponse> getBoardsByCategory(CategoryType categoryType, int page) {
-        int pageSize = 0;
+    public Page<BoardResponse> getBoardsByCategory(CategoryType categoryType, int page, String type, String keyWord) {
+        int pageSize = 10;
 
         String categoryToString = categoryType.name();
         if (List.of("SHOWCASE", "PLAYLISTS", "SPOTLIGHT").contains(categoryToString)) {
@@ -106,7 +108,10 @@ public class BoardService {
 
         Pageable pageable = PageRequest.of(page, pageSize, Sort.by("createdDateTime").descending());
 
-        List<Board> boards = boardRepository.findByDeletedDateTimeIsNullAndCategoryCategoryType(categoryType, pageable);
+        String searchType = (type == null) ? "title" : type.toLowerCase(Locale.ROOT).trim();
+        String searchKeyWord = (keyWord == null) ? "nickname" : keyWord.toLowerCase(Locale.ROOT).trim();
+
+        Page<Board> boards = boardRepository.searchBoardsByKeywords(categoryType, searchType, searchKeyWord, pageable);
         // 보드에서 얻은 게시글 아이디로 코멘트 레포에서 게시글 id만큼 찾아야함
 
         if (boards.isEmpty()) {
@@ -114,21 +119,17 @@ public class BoardService {
         }
 
         // 게시글 목록 표시
-        List<BoardResponse> boardResponses = new ArrayList<>();
-        for (Board board : boards) {
-            BoardResponse newResponse = BoardResponse.builder()
-                    .boardId(board.getBoardId())
-                    .title(board.getTitle())
-                    .nickname(board.getUser().getNickname())
-                    .createdDateTime(board.getCreatedDateTime())
-                    .views(board.getViews())
-                    .likes(board.getLikes())
-                    .countComment(board.getCountComment())
-                    .build();
-
-            boardResponses.add(newResponse);
-        }
-        return boardResponses;
+        return boards.map(board -> BoardResponse.builder()
+                .boardId(board.getBoardId())
+                .userId(board.getUser().getId())
+                .title(board.getTitle())
+                .nickname(board.getUser().getNickname())
+                .createdDateTime(board.getCreatedDateTime())
+                .views(board.getViews())
+                .likes(board.getLikes())
+                .countComment(board.getCountComment())
+                .build()
+        );
     }
 
     // 게시글 삭제

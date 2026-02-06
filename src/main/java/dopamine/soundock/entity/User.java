@@ -77,4 +77,10 @@ public class User {
     @OneToOne
     @JoinColumn(name = "grade_id")
     private UserGrade userGrade;
+
+    @Column(name = "profile_url")
+    private String profileUrl;
+
+    @Column(name = "name")
+    private String name;
 }

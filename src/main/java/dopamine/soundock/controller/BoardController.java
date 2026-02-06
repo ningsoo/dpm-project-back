@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -83,10 +84,12 @@ public class BoardController {
     @GetMapping("/category/{categoryType}")
     public ResponseEntity<RestResponse<?>> getBoards(
             @PathVariable(required = true) CategoryType categoryType,
-            @RequestParam(defaultValue = "0") int page
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "title") String type,
+            @RequestParam(required = false, defaultValue = "") String keyword
     ){
         // subCategory와 일치하는 게시글 목록 조회
-        List<BoardResponse> boardResponses = boardService.getBoardsByCategory(categoryType, page) ;
+        Page<BoardResponse> boardResponses = boardService.getBoardsByCategory(categoryType, page,type, keyword) ;
         return ResponseEntity.ok(RestResponse.success(boardResponses));
         }
 

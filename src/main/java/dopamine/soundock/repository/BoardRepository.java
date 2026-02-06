@@ -24,6 +24,7 @@ public interface BoardRepository extends JpaRepository<Board, Integer> {
 
     Optional<Board> findByBoardIdAndDeletedDateTimeIsNull(Integer boardId);
     // 카테고리의 삭제되지 않은 게시글 조회
+
     List<Board> findByDeletedDateTimeIsNullAndCategoryCategoryType(CategoryType categoryType, Pageable pageable);
     @Modifying
     @Query("UPDATE Board b SET b.likes = b.likes + 1 WHERE b.boardId = :boardId")
@@ -38,4 +39,11 @@ public interface BoardRepository extends JpaRepository<Board, Integer> {
     @Query("UPDATE Board b SET b.views = b.views + 1 WHERE b.boardId = :id")
     void incrementViews(@Param("id") Integer boardId);
 
+    @Query("SELECT b FROM Board b " +
+            "WHERE b.category.categoryType = :categoryType " +
+            "AND b.deletedDateTime IS NULL " +
+            "AND (" +
+            " (:type = 'title' AND b.title Like CONCAT('%', :keyWord, '%')) OR " +
+            " (:type = 'nickname' AND b.user.nickname = :keyWord)" + ")")
+    Page<Board> searchBoardsByKeywords(@Param("categoryType") CategoryType categoryType, @Param("type") String searchType, @Param("keyWord") String searchKeyWord, Pageable pageable);
 }
