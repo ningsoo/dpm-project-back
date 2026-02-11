@@ -105,5 +105,14 @@ public interface PopHistoryRepository extends JpaRepository<PopHistory, Integer>
             "WHERE p.popStatus = 'PENDING' AND p.popTarget = 'RECEIVED' " +
             "AND p.createdDatetime <= :updateTime")
     List<PopHistory> findPendingReceived(@Param("updateTime") LocalDateTime updateTime);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE PopHistory p SET p.popStatus = :status, p.approvedDatetime = :now, p.popTarget = :target WHERE p.popHistoryId = :id")
+    int updateStatusAfterTossPay(
+            @Param("id") Integer id,
+            @Param("status") PopStatus status,
+            @Param("now") LocalDateTime now,
+            @Param("target") PopTarget target
+    );
 }
 

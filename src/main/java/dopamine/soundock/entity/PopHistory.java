@@ -70,7 +70,7 @@ public class PopHistory {
     public void completeChargePayment(PopStatus status, PopTarget target){
         this.popStatus = status;
         this.popTarget = target;
-        this.createdDatetime = LocalDateTime.now();
+        this.approvedDatetime = LocalDateTime.now();
     }
     // 결제 주문 내역 생성 메서드
     public static PopHistory createPendingHistory(User user, String orderId, PreparePaymentRequest prepareRequest){
