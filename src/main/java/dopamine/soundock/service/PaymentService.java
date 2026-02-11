@@ -62,67 +62,79 @@ public class PaymentService {
     }
 
     // 결제 승인 요청
-    @Transactional
     public ConfirmPaymentResponse confirmPayment(ConfirmPaymentRequest confirmRequest) {
 
-        // 결제 시도자가 로그인한 유저인지 검증
+        // 1. // 결제 시도자가 로그인한 유저인지 검증
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("존재하지 않는 사용자입니다."));
 
-        // 받은 orderId와 DB에 저장된 값 일치하는지 검증
         PopHistory popHistory = popHistoryRepository.findByOrderIdAndPopStatus(confirmRequest.getOrderId(), PopStatus.PENDING)
                 .orElseThrow(() -> new ResourceNotFoundException("주문 Id가 일치하지 않는 결제 요청입니다."));
 
-        // 받은 실제 결제 금액과 DB에 저장된 값 일치하는지 검증
-        if (!Objects.equals(popHistory.getActualAmount(), confirmRequest.getAmount())){
+        if (!Objects.equals(popHistory.getActualAmount(), confirmRequest.getAmount())) {
             throw new ResourceNotFoundException("결제 요청 금액과 일치하지 않습니다.");
         }
 
-        // tossPayment 객체 받아옴
-         ConfirmPaymentResponse confirmPaymentResponse =
-                 tossWebClient.post()
-                         .uri("/payments/confirm")
-                         .contentType(MediaType.APPLICATION_JSON)
-                         .bodyValue(confirmRequest)
-                         .retrieve()
-                         .onStatus(HttpStatusCode::is4xxClientError,
-                                 clientResponse -> clientResponse.bodyToMono(String.class)
-                                     .flatMap(body -> Mono.error(
-                                             new ResourceNotFoundException("요청을 처리할 수 없습니다.")
-                                     ))
-                         )
-                         .onStatus(HttpStatusCode::is5xxServerError,
-                                 clientResponse -> clientResponse.bodyToMono(String.class)
-                                         .flatMap(body -> Mono.error(
-                                         new IllegalArgumentException("토스 서버 내부에서 오류가 발생했습니다."))
-                                 ))
-                         .bodyToMono(ConfirmPaymentResponse.class)
-                         .block();
+        // 2. Toss API 호출
+        ConfirmPaymentResponse confirmPaymentResponse =
+                tossWebClient.post()
+                        .uri("/payments/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(confirmRequest)
+                        .retrieve()
+                        .onStatus(HttpStatusCode::is4xxClientError,
+                                clientResponse -> clientResponse.bodyToMono(String.class)
+                                        .flatMap(body -> Mono.error(
+                                                new ResourceNotFoundException("요청을 처리할 수 없습니다.")
+                                        ))
+                        )
+                        .onStatus(HttpStatusCode::is5xxServerError,
+                                clientResponse -> clientResponse.bodyToMono(String.class)
+                                        .flatMap(body -> Mono.error(
+                                                new IllegalArgumentException("토스 서버 내부에서 오류가 발생했습니다."))
+                                        ))
+                        .bodyToMono(ConfirmPaymentResponse.class)
+                        .block();
 
-        // 응답이 없을 경우
-        if (confirmPaymentResponse == null){
+        if (confirmPaymentResponse == null) {
             throw new IllegalArgumentException("토스 결제 승인 응답이 비어 있습니다.");
         }
-
-        // status가 DONE이 아닐 경우
-        if (!Objects.requireNonNull(confirmPaymentResponse).getStatus().equals("DONE")){
-            throw new IllegalArgumentException("결제가 완료되지 않았습니다. 현재 결제 상태 : " + confirmPaymentResponse.getStatus());
+        if (!"DONE".equals(confirmPaymentResponse.getStatus())) {
+            throw new IllegalArgumentException("결제가 완료되지 않았습니다. 상태: " + confirmPaymentResponse.getStatus());
         }
 
-        // orderId랑 일치하는 객체인 popHistory의 결제 정보 내역 업데이트
-        popHistory.completeChargePayment(PopStatus.COMPLETED, PopTarget.CHARGE);
-        popHistoryRepository.save(popHistory);
+        // 3. Toss 결제 완료 후 DB 업데이트
+        try {
+            return transactionTemplate.execute(status -> {
+                // 1. popHistory ID 가져오기
+                Integer historyId = popHistory.getPopHistoryId();
 
-        // TossPayment 객체에서 받은 정보를 DB에 저장
-        TossPayment tossPayment = confirmPaymentResponse.toEntity(popHistory);
-        tossPaymentRepository.save(tossPayment);
+                // 2. popHistory 업데이트
+                int updatedCount = popHistoryRepository.updateStatusAfterTossPay(
+                        historyId,
+                        PopStatus.COMPLETED,
+                        LocalDateTime.now(),
+                        PopTarget.CHARGE
+                );
 
-        // 유저 재화 잔여량 업데이트
-        userRepository.increasePopBalance(user.getEmail(), popHistory.getChangeAmount());
+                if (updatedCount == 0) {
+                    throw new RuntimeException("DB 업데이트 실패: ID를 찾을 수 없음");
+                }
 
-         return confirmPaymentResponse;
+                // 3. TossPayment 저장
+                TossPayment tossPayment = confirmPaymentResponse.toEntity(popHistory);
+                tossPaymentRepository.save(tossPayment);
+
+                // 4. 유저 pop Balance 증가
+                userRepository.increasePopBalance(user.getEmail(), popHistory.getChangeAmount());
+
+                return confirmPaymentResponse;
+            });
+        } catch (Exception e) {
+            log.error("에러발생: {}", e.getMessage());
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     // PaymentKey를 통한 승인된 결제 조회
@@ -264,11 +276,11 @@ public class PaymentService {
                             .bodyToMono(ConfirmPaymentResponse.class)
                             .block();
         } catch (Exception e) {
-            // [토스 요청 실패 - 트랜잭션]
+            // 토스 요청 실패의 경우
             transactionTemplate.execute(status -> {
                 TossPayment tossPayment = tossPaymentRepository.findByPaymentKey(paymentKey).orElseThrow();
                 PopHistory popHistory = popHistoryRepository.findByOrderIdAndPopStatus(tossPayment.getOrderId(), PopStatus.COMPLETED).orElseThrow();
-                // 유저 포인트 다시 복구
+                // 유저 pop Balance 복구
                 userRepository.increasePopBalance(user.getEmail(), popHistory.getChangeAmount());
                 return null;
             });
