@@ -78,6 +78,7 @@ public class PopService {
                     .target(popHistory.getPopTarget())
                     .isCanceled(isCanceled)
                     .changeAmount(popHistory.getChangeAmount())
+                    .actualAmount(popHistory.getActualAmount())
                     .createdDatetime(popHistory.getCreatedDatetime())
                     .expiredDatetime(expiredDatetime)
                     .build();
