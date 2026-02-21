@@ -24,6 +24,7 @@ public class CommentResponse {
     private Integer countComment;
     private LocalDateTime createdDatetime;
     private LocalDateTime updatedDatetime;
+    private boolean isDeleted;
 
     public static CommentResponse from(Comment comment){
         return CommentResponse.builder()
@@ -47,6 +48,7 @@ public class CommentResponse {
                 .toggledLike(toggledLike)
                 .createdDatetime(comment.getCreatedDateTime())
                 .updatedDatetime(comment.getUpdatedDateTime())
+                .isDeleted(comment.getUser().isDeleted())
                 .build();
     }
 
@@ -60,6 +62,7 @@ public class CommentResponse {
                 .countComment(countComment)
                 .createdDatetime(comment.getCreatedDateTime())
                 .updatedDatetime(comment.getUpdatedDateTime())
+                .isDeleted(comment.getUser().isDeleted())
                 .build();
     }
 }

@@ -27,6 +27,7 @@ public class BoardResponse{
     private int countComment;
     private CategoryType categoryType;
     private String linkUrl;
+    private boolean isDeleted;
 
 
     // s3 이미지/파일url, id
